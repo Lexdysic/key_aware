@@ -447,10 +447,7 @@ int32_t KeyGraphDistance (const char * s, int32_t len_s, const char * t, int32_t
 int main () {
     std::cout << "Loading Dictionary..." << std::endl;
     std::vector<std::string> dictionary;
-    if (0) {
-        dictionary = {"fila", "file", "fili", "filk", "fill", "film", "filo", "fils", "fira", "fire", "firk", "firm", "firn", "firs"};
-    }
-    else {
+    {
         std::ifstream ifs;
         ifs.open ("dictionary.txt", std::ifstream::in);
     
@@ -462,8 +459,6 @@ int main () {
         ifs.close();
     }
     std::cout << "...Done." << std::endl;
-
-
 
 
     std::string str;
