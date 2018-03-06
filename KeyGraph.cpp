@@ -372,7 +372,7 @@ int32_t LevenshteinDistance (const char * s, int32_t len_s, const char * t, int3
     // initialize v0 (the previous row of distances)
     // this row is A[0][i]: edit distance for an empty s
     // the distance is just the number of characters to delete from t
-    for (int32_t i = 0; i < len_s; ++i)
+    for (int32_t i = 0; i <= len_s; ++i)
         v0[i] = i * 2;
 
     for (int32_t i = 0; i < len_t; ++i) {
@@ -383,7 +383,7 @@ int32_t LevenshteinDistance (const char * s, int32_t len_s, const char * t, int3
         v1[0] = i + 2;
 
         // use formula to fill in the rest of the row
-        for (int32_t j = 0; j < len_s-1; ++j) {
+        for (int32_t j = 0; j < len_s; ++j) {
             // calculating costs for A[i+1][j+1]
             int32_t deletionCost     = v0[j + 1] + 2;
             int32_t insertionCost    = v1[j] + 2;
@@ -397,7 +397,7 @@ int32_t LevenshteinDistance (const char * s, int32_t len_s, const char * t, int3
     }
 
     // after the last swap, the results of v1 are now in v0
-    return v0[len_s - 1];
+    return v0[len_s];
 }
 
 int32_t KeyGraphDistance (const char * s, int32_t len_s, const char * t, int32_t len_t) {
@@ -408,7 +408,7 @@ int32_t KeyGraphDistance (const char * s, int32_t len_s, const char * t, int32_t
     // initialize v0 (the previous row of distances)
     // this row is A[0][i]: edit distance for an empty s
     // the distance is just the number of characters to delete from t
-    for (int32_t i = 0; i < len_s; ++i)
+    for (int32_t i = 0; i <= len_s; ++i)
         v0[i] = i * 2;
 
     for (int32_t i = 0; i < len_t; ++i) {
@@ -419,7 +419,7 @@ int32_t KeyGraphDistance (const char * s, int32_t len_s, const char * t, int32_t
         v1[0] = i + 2;
 
         // use formula to fill in the rest of the row
-        for (int32_t j = 0; j < len_s-1; ++j) {
+        for (int32_t j = 0; j < len_s; ++j) {
             // calculating costs for A[i+1][j+1]
             int32_t deletionCost     = v0[j + 1] + 2;
             int32_t insertionCost    = v1[j] + 2;
@@ -441,7 +441,7 @@ int32_t KeyGraphDistance (const char * s, int32_t len_s, const char * t, int32_t
     }
 
     // after the last swap, the results of v1 are now in v0
-    return v0[len_s - 1];
+    return v0[len_s];
 }
 
 int main () {
@@ -503,6 +503,6 @@ int main () {
         for (const auto & word : bestKeyGraph.words) {
             std::cout << word << ", ";
         }
-         std::cout << std::endl;
+        std::cout << std::endl;
     }
 }
