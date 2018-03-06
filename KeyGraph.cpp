@@ -1,13 +1,30 @@
-#include <Windows.h>
+
 #include <map>
 #include <vector>
 #include <iostream>
+#include <fstream>
 #include <set>
 #include <cctype>
 #include <cstdio>
+#include <locale>
+#include <codecvt>
+#include <algorithm>
 
 
-class Key {
+//
+// CONSTANTS
+//
+enum class Key;
+
+#ifdef _WIN32
+#define NOMINMAX
+#include <Windows.h>
+#include <io.h>
+#include <fcntl.h>
+
+enum class Key {
+    None            = 0,
+
     Escape          = VK_ESCAPE,
     F1              = VK_F1,
     F2              = VK_F2,
@@ -97,8 +114,8 @@ class Key {
     Menu            = VK_APPS,
     RightControl    = VK_RCONTROL,
 
-    None = 0
 };
+#endif
 
 enum MetaMask {
     kMetaNone    = 0x0,
@@ -114,9 +131,154 @@ struct KeyCode {
     MetaMask   meta = kMetaNone;
 };
 
-using KeyMapping = std::map<Key, std::vector<Key>>;
+//
+// HELPERS
+//
 
-static KeyMapping s_keyGraphUs104 = {
+static HKL s_hCurrentKL = GetKeyboardLayout(0);
+static HKL s_hKeyboardLayout = LoadKeyboardLayoutW(L"", 0);
+//MAKELCID(LANG_SWEDISH, SUBLANG_SWEDISH);
+//LANG_SWEDISH SUBLANG_SWEDISH
+KeyCode CharToKeyCode (char32_t ch) {
+    KeyCode keyCode;
+
+    SHORT vkScan = VkKeyScanExW(WCHAR(ch), s_hCurrentKL);
+    keyCode.key  = Key(LOBYTE(vkScan));
+    keyCode.meta = MetaMask(HIBYTE(vkScan));
+
+    return keyCode;
+}
+
+char32_t KeyCodeToChar (KeyCode keyCode) {
+    BYTE keyState[256] = {};
+    keyState[VK_SHIFT]   = (keyCode.meta & kMetaShift) ? 0xff : 0;
+    keyState[VK_CONTROL] = (keyCode.meta & kMetaCtrl) ? 0xff : 0;
+    keyState[VK_MENU]    = (keyCode.meta & kMetaAlt) ? 0xff : 0;
+
+    WCHAR buffer[8];
+    int rv = ToUnicode(UINT(keyCode.key), 0, keyState, buffer, 8, 0);
+    if (rv == 1) {
+        return buffer[0];
+    }
+    else {
+        return 0;
+    }
+}
+
+
+//
+// KeyGraph
+//
+
+using KeySet      = std::set<Key>;
+using CharSet     = std::set<char32_t>;
+using KeyMapping  = std::map<Key, KeySet>;
+using CharMapping = std::map<char32_t, CharSet>;
+
+class KeyGraph {
+public:
+    KeyGraph (std::initializer_list<KeyMapping::value_type> && list) :
+        m_keyMapping(std::move(list))
+    {
+        for (const auto & kv : m_keyMapping) {
+            for (uint8_t meta = 0; meta < kMetaTerm; ++meta) {
+                KeyCode keyCode;
+                keyCode.key  = kv.first;
+                keyCode.meta = MetaMask(meta);
+
+                char32_t ch = KeyCodeToChar(keyCode);
+                m_charMapping[ch] = ComputeNeighbors(ch);
+            }
+        }
+    }
+
+    KeySet Neighbors (Key key) {
+        KeySet neighbors;
+
+        auto it = m_keyMapping.find(key);
+        if (it != m_keyMapping.end()) {
+            neighbors = it->second;
+        }
+
+        return neighbors;
+    }
+    
+    CharSet Neighbors (char32_t ch) {
+        CharSet neighbors;
+
+        auto it = m_charMapping.find(ch);
+        if (it != m_charMapping.end()) {
+            neighbors = it->second;
+        }
+
+        return neighbors;
+    }
+    
+    CharSet ComputeNeighbors (char32_t ch) {
+        CharSet neighbors;
+
+        auto addAllMetaVariations = [&neighbors](Key key) {
+            for (uint8_t meta = 0; meta < kMetaTerm; ++meta) {
+                KeyCode outputKeyCode;
+                outputKeyCode.key  = key;
+                outputKeyCode.meta = MetaMask(meta);
+
+                const char32_t ch = KeyCodeToChar(outputKeyCode);
+
+                if (ch && !std::iscntrl(ch)) {
+                    neighbors.insert(ch);
+                }
+            }
+        };
+
+        KeyCode keycode = CharToKeyCode(ch);
+        addAllMetaVariations(keycode.key);
+
+        auto it = m_keyMapping.find(keycode.key);
+        if (it != m_keyMapping.end()) {
+            for (const Key key : it->second) {
+                addAllMetaVariations(key);
+            }
+        }
+
+        return neighbors;
+    }
+
+
+    CharSet Convert (Key key) {
+        CharSet chars;
+
+        auto it = m_keyMapping.find(key);
+        if (it != m_keyMapping.end()) {
+            for (uint8_t meta = 0; meta < kMetaTerm; ++meta) {
+                for (const auto & key : it->second) {
+                    KeyCode outputKeyCode;
+                    outputKeyCode.key  = key;
+                    outputKeyCode.meta = MetaMask(meta);
+
+                    const char32_t ch = KeyCodeToChar(outputKeyCode);
+
+                    if (ch && !std::iscntrl(ch)) {
+                        chars.insert(ch);
+                    }
+                }
+            }
+        }
+
+        return chars;
+    }
+
+private:
+    KeyMapping  m_keyMapping;  // from each key to neighbor key
+    CharMapping m_charMapping; // from each char to each neighbor char
+};
+
+
+//
+// TEST
+//
+
+static KeyGraph s_keyGraphUs104 = {
     { Key::Escape,          {} },
     { Key::F1,              { Key::F2 } },
     { Key::F2,              { Key::F1, Key::F3 } },
@@ -201,66 +363,146 @@ static KeyMapping s_keyGraphUs104 = {
     { Key::RightControl,    { Key::RightShift, Key::Menu } },
 };
 
-KeyCode CharToKeyCode (char32_t ch) {
-    KeyCode keyCode;
+// https://en.wikipedia.org/wiki/Levenshtein_distance
+int32_t LevenshteinDistance (const char * s, int32_t len_s, const char * t, int32_t len_t) {
+    // create two work vectors of integer distances
+    int32_t v0[128];
+    int32_t v1[128];
 
-    SHORT vkScan = VkKeyScanW(WCHAR(ch));
-    keyCode.key  = Key(LOBYTE(vkScan));
-    keyCode.meta = MetaMask(HIBYTE(vkScan));
+    // initialize v0 (the previous row of distances)
+    // this row is A[0][i]: edit distance for an empty s
+    // the distance is just the number of characters to delete from t
+    for (int32_t i = 0; i < len_s; ++i)
+        v0[i] = i * 2;
 
-    return keyCode;
+    for (int32_t i = 0; i < len_t; ++i) {
+        // calculate v1 (current row distances) from the previous row v0
+
+        // first element of v1 is A[i+1][0]
+        //   edit distance is delete (i+1) chars from s to match empty t
+        v1[0] = i + 2;
+
+        // use formula to fill in the rest of the row
+        for (int32_t j = 0; j < len_s-1; ++j) {
+            // calculating costs for A[i+1][j+1]
+            int32_t deletionCost     = v0[j + 1] + 2;
+            int32_t insertionCost    = v1[j] + 2;
+            int32_t substitutionCost = (s[i] == t[j]) ? v0[j] : v0[j] + 2;
+
+            v1[j + 1] = std::min({deletionCost, insertionCost, substitutionCost});
+        }
+
+        // copy v1 (current row) to v0 (previous row) for next iteration
+        std::swap(v0, v1);
+    }
+
+    // after the last swap, the results of v1 are now in v0
+    return v0[len_s - 1];
 }
 
-char32_t KeyCodeToChar (KeyCode keyCode) {
-    BYTE keyState[256] = {};
-    keyState[VK_SHIFT] = (keyCode.meta & kMetaShift) ? 0xff : 0;
-    keyState[VK_CONTROL] = (keyCode.meta & kMetaCtrl) ? 0xff : 0;
-    keyState[VK_MENU] = (keyCode.meta & kMetaAlt) ? 0xff : 0;
+int32_t KeyGraphDistance (const char * s, int32_t len_s, const char * t, int32_t len_t) {
+    // create two work vectors of integer distances
+    int32_t v0[128];
+    int32_t v1[128];
 
-    WCHAR buffer[8];
-    int rv = ToUnicode(UINT(keyCode.key), 0, keyState, buffer, 8, 0);
-    if (rv == 1) {
-        return buffer[0];
+    // initialize v0 (the previous row of distances)
+    // this row is A[0][i]: edit distance for an empty s
+    // the distance is just the number of characters to delete from t
+    for (int32_t i = 0; i < len_s; ++i)
+        v0[i] = i * 2;
+
+    for (int32_t i = 0; i < len_t; ++i) {
+        // calculate v1 (current row distances) from the previous row v0
+
+        // first element of v1 is A[i+1][0]
+        //   edit distance is delete (i+1) chars from s to match empty t
+        v1[0] = i + 2;
+
+        // use formula to fill in the rest of the row
+        for (int32_t j = 0; j < len_s-1; ++j) {
+            // calculating costs for A[i+1][j+1]
+            int32_t deletionCost     = v0[j + 1] + 2;
+            int32_t insertionCost    = v1[j] + 2;
+            int32_t substitutionCost;
+            if (s[i] == t[j]) {
+                substitutionCost = v0[j];
+            }
+            else {
+                CharSet neighbors = s_keyGraphUs104.Neighbors(char32_t(s[i]));
+                const bool isNeighbor = neighbors.find(t[j]) != neighbors.end();
+                substitutionCost = v0[j] + (isNeighbor ? 1 : 2);
+            }
+
+            v1[j + 1] = std::min({deletionCost, insertionCost, substitutionCost});
+        }
+
+        // copy v1 (current row) to v0 (previous row) for next iteration
+        std::swap(v0, v1);
     }
-    else {
-        return 0;
-    }
+
+    // after the last swap, the results of v1 are now in v0
+    return v0[len_s - 1];
 }
 
 int main () {
-    char ch;
+    std::cout << "Loading Dictionary..." << std::endl;
+    std::vector<std::string> dictionary;
+    if (0) {
+        dictionary = {"fila", "file", "fili", "filk", "fill", "film", "filo", "fils", "fira", "fire", "firk", "firm", "firn", "firs"};
+    }
+    else {
+        std::ifstream ifs;
+        ifs.open ("dictionary.txt", std::ifstream::in);
+    
+        std::string str;
+        while (ifs >> str) {
+            dictionary.emplace_back(std::move(str));
+        }
 
-    while (std::cin >> ch) {
-        KeyCode inputKeyCode = CharToKeyCode(ch);
+        ifs.close();
+    }
+    std::cout << "...Done." << std::endl;
 
-        std::set<char32_t> neighbors;
 
-        auto it = s_keyGraphUs104.find(inputKeyCode.key);
-        if (it != s_keyGraphUs104.end()) {
-            for (uint8_t meta = 0; meta < kMetaTerm; ++meta) {
-                for (const auto & key : it->second) {
-                    KeyCode outputKeyCode;
-                    outputKeyCode.key = key;
-                    outputKeyCode.meta = MetaMask(meta);
 
-                    const char32_t ch = KeyCodeToChar(outputKeyCode);
 
-                    if (ch && !std::iscntrl(ch)) {
-                        neighbors.insert(ch);
-                    }
-                }
+    std::string str;
+    while (std::cin >> str) {
+        struct Best {
+            int32_t dist = INT32_MAX;
+            std::vector<std::string> words;
+        };
+        Best bestLevenshtein;
+        Best bestKeyGraph;
+
+        using DistanceFunc = decltype(LevenshteinDistance) *;
+        auto runBest = [](DistanceFunc func, const std::string & str, const std::string & word, Best * best) {
+            const int32_t dist = func(str.c_str(), (int32_t)str.length(), word.c_str(), (int32_t)word.length());
+            if (dist < best->dist) {
+                best->words.clear();
+                best->dist = dist;
             }
-        }
 
-        if (neighbors.empty()) {
-            std::cout << "No mappings";
-        }
-        else {
-            for (char32_t ch : neighbors) {
-                std::cout << (char)ch << " ";
+            if (dist <= best->dist) {
+                best->words.emplace_back(word);
             }
+        };
+
+        for (const auto & word : dictionary) {
+            runBest(LevenshteinDistance, str, word, &bestLevenshtein);
+            runBest(KeyGraphDistance,    str, word, &bestKeyGraph);
         }
 
+        std::cout << "Levenshtein: ";
+        for (const auto & word : bestLevenshtein.words) {
+            std::cout << word << ", ";
+        }
         std::cout << std::endl;
+
+        std::cout << "KeyGraph:    ";
+        for (const auto & word : bestKeyGraph.words) {
+            std::cout << word << ", ";
+        }
+         std::cout << std::endl;
     }
 }
