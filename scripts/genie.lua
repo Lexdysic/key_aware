@@ -1,26 +1,77 @@
-solution "KeyGraph"
+kRootDir = ".."
+
+solution "key_aware"
     configurations { "Debug", "Release" }
-    location("../.build/projects/" .. _ACTION)
-    platforms { "x64" }
-    debugdir ".."
+    platforms { "x32", "x64" }
 
-    project "KeyGraph"
-        targetname "KeyGraph"
-        language "C++"
-        kind "ConsoleApp"
+    location(path.join(kRootDir, ".build", "projects", _ACTION))
+    language "C++"
+    
+    
+    -- flags
+    flags {
+        "StaticRuntime",
+        "ExtraWarnings"
+    }
+    configuration { "Release" }
+        flags {
+            "Optimize"
+        }
+    configuration {}
 
-        flags { "StaticRuntime" }
+    -- buildoptions
+    configuration { "vs*" }
+        buildoptions {
+            "/std:c++17",
+            "/permissive-"
+        }
+    configuration { "gmake" }
+        buildoptions {
+            "-std=c++17"
+        }
+    configuration {}
 
-        files {
-            "../include/**",
-            "../src/**",
-            "../scripts/**.lua",
+    -- targetdir
+    configuration { "linux" }
+        targetdir(path.join(kRootDir, ".build", "bin", "linux"))
+    configuration { "windows" }
+        targetdir(path.join(kRootDir, ".build", "bin", "windows"))
+    configuration {}
+    
+    -- WindowsSDK
+    configuration { "vs2017"}
+        windowstargetplatformversion string.gsub(os.getenv("WindowsSDKVersion") or "10.0.10240.0", "\\", "")
+    configuration {}
+
+    project "key_aware"
+        kind "StaticLib"
+        
+           includedirs {
+            path.join(kRootDir, "include"),
         }
 
-        configuration { "Release" }
-            flags { "Optimize" }
-        configuration { "linux" }
-            targetdir "../.build/bin/linux"
-        configuration { "windows" }
-            targetdir "../.build/bin/windows"
-        configuration {}
+        files {
+            path.join(kRootDir, "include", "**"),
+            path.join(kRootDir, "src", "**"),
+            path.join(kRootDir, "scripts", "**"),
+        }
+
+
+
+    project "key_aware_test"
+        targetname "key_aware_test"
+        debugdir ".."
+        kind "ConsoleApp"
+
+        
+           includedirs {
+            path.join(kRootDir, "include"),
+        }
+
+        files {
+            path.join(kRootDir, "test", "**"),
+        }
+
+        links {
+            "key_aware",
+        }
