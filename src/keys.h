@@ -1,4 +1,6 @@
 
+namespace key_aware {
+
 enum class Key {
     None,
 
@@ -110,3 +112,6 @@ struct KeyCode {
 
 char32_t KeyCodeToChar (KeyCode keyCode);
 KeyCode CharToKeyCode (char32_t ch);
+
+
+} // namespace key_aware
