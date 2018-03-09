@@ -46,7 +46,7 @@ solution "key_aware"
     project "key_aware"
         kind "StaticLib"
         
-           includedirs {
+        includedirs {
             path.join(kRootDir, "include"),
         }
 
@@ -63,8 +63,7 @@ solution "key_aware"
         debugdir ".."
         kind "ConsoleApp"
 
-        
-           includedirs {
+        ncludedirs {
             path.join(kRootDir, "include"),
         }
 
