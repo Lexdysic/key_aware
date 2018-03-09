@@ -1,5 +1,8 @@
 #include "graph.h"
 #include <key_aware/key_aware.h>
+#include <set>
+#include <cctype>
+#include <algorithm>
 
 namespace key_aware {
 
@@ -70,28 +73,6 @@ CharSet KeyGraph::ComputeNeighbors (char32_t ch) {
     return neighbors;
 }
 
-CharSet KeyGraph::Convert (Key key) {
-    CharSet chars;
-
-    auto it = m_keyMapping.find(key);
-    if (it != m_keyMapping.end()) {
-        for (uint8_t meta = 0; meta < kMetaTerm; ++meta) {
-            for (const auto & key : it->second) {
-                KeyCode outputKeyCode;
-                outputKeyCode.key = key;
-                outputKeyCode.meta = MetaMask(meta);
-
-                const char32_t ch = KeyCodeToChar(outputKeyCode);
-
-                if (ch && !std::iscntrl(ch)) {
-                    chars.insert(ch);
-                }
-            }
-        }
-    }
-
-    return chars;
-}
 
 static KeyGraph s_keyGraphUs104 = {
     { Key::Escape,          {} },
@@ -179,7 +160,7 @@ static KeyGraph s_keyGraphUs104 = {
 };
 
 int32_t Distance (const StringView & from, const StringView & to) {
-    const size_t maxLen = std::max(from.Length(), to.Length());
+    const int32_t maxLen = std::max(from.Length(), to.Length());
     const bool isSmall = maxLen < 128;
 
     int32_t v0Small[128];

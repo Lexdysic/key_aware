@@ -43,6 +43,8 @@ solution "key_aware"
         windowstargetplatformversion string.gsub(os.getenv("WindowsSDKVersion") or "10.0.10240.0", "\\", "")
     configuration {}
 
+
+
     project "key_aware"
         kind "StaticLib"
         
@@ -63,9 +65,14 @@ solution "key_aware"
         debugdir ".."
         kind "ConsoleApp"
 
-        ncludedirs {
+        includedirs {
             path.join(kRootDir, "include"),
         }
+        
+    configuration { "linux" }
+        libdirs(path.join(kRootDir, ".build", "bin", "linux"))
+    configuration { "windows" }
+        libdirs(path.join(kRootDir, ".build", "bin", "windows"))
 
         files {
             path.join(kRootDir, "test", "**"),
