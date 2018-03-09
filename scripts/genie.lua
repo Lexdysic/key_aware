@@ -40,7 +40,7 @@ solution "key_aware"
     
     -- WindowsSDK
     configuration { "vs2017"}
-        windowstargetplatformversion string.gsub(os.getenv("WindowsSDKVersion") or "10.0.10240.0", "\\", "")
+        windowstargetplatformversion(string.gsub(os.getenv("WindowsSDKVersion") or "10.0.16299.0", "\\", ""))
     configuration {}
 
 
