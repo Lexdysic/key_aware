@@ -49,11 +49,10 @@ int32_t KeyGraphDistance (const char * s, int32_t len_s, const char * t, int32_t
 }
 
 int main () {
-    std::cout << "Loading Dictionary..." << std::endl;
     std::vector<std::string> dictionary;
     {
         std::ifstream ifs;
-        ifs.open ("dictionary.txt", std::ifstream::in);
+        ifs.open ("english_words.txt", std::ifstream::in);
     
         std::string str;
         while (ifs >> str) {
@@ -62,11 +61,16 @@ int main () {
 
         ifs.close();
     }
-    std::cout << "...Done." << std::endl;
 
 
-    std::string str;
-    while (std::cin >> str) {
+    while (true) {
+        std::cout << "Search Word: ";
+
+        std::string str;
+        if (!(std::cin >> str))
+            break;
+
+
         struct Best {
             int32_t dist = INT32_MAX;
             std::vector<std::string> words;
@@ -92,16 +96,23 @@ int main () {
             runBest(KeyGraphDistance,    str, word, &bestKeyGraph);
         }
 
-        std::cout << "Levenshtein: ";
-        for (const auto & word : bestLevenshtein.words) {
-            std::cout << word << ", ";
-        }
-        std::cout << std::endl;
+        auto printList = [](const std::vector<std::string> & words) {
+            bool tail = false;
+            for (const auto & word : words) {
+                if (tail)
+                    std::cout << ", ";
+                std::cout << word; 
+                tail = true;
+            }
+            std::cout << std::endl;
+        };
 
-        std::cout << "KeyGraph:    ";
-        for (const auto & word : bestKeyGraph.words) {
-            std::cout << word << ", ";
-        }
-        std::cout << std::endl;
+        std::cout << "Levenshtein: ";
+        printList(bestLevenshtein.words);
+
+        std::cout << "Key-Aware:   ";
+        printList(bestKeyGraph.words);
+
+        std::cout << std::endl << std::endl;
     }
 }

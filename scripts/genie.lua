@@ -17,26 +17,27 @@ solution "key_aware"
         flags {
             "Optimize"
         }
+    configuration { "Debug"}
+        flags {
+            "Symbols"
+        }
     configuration {}
 
     -- buildoptions
     configuration { "vs*" }
         buildoptions {
-            "/std:c++17",
+            --"/std:c++17",
             "/permissive-"
         }
     configuration { "gmake" }
         buildoptions {
-            "-std=c++17"
+            --"-std=c++17"
         }
     configuration {}
 
-    -- targetdir
-    configuration { "linux" }
-        targetdir(path.join(kRootDir, ".build", "bin", "linux"))
-    configuration { "windows" }
-        targetdir(path.join(kRootDir, ".build", "bin", "windows"))
-    configuration {}
+	targetdir (path.join(kRootDir, ".build", ACTION, "bin"))
+	objdir (path.join(kRootDir, ".build", _ACTION, "obj"))
+
     
     -- WindowsSDK
     configuration { "vs2017"}
@@ -58,24 +59,24 @@ solution "key_aware"
             path.join(kRootDir, "scripts", "**"),
         }
 
+    startproject "key_aware_sample"
 
-
-    project "key_aware_test"
-        targetname "key_aware_test"
-        debugdir ".."
+    project "key_aware_sample"
+        targetname "key_aware_sample"
+        debugdir(path.join(kRootDir, "sample", "data"))
         kind "ConsoleApp"
 
         includedirs {
             path.join(kRootDir, "include"),
         }
         
-    configuration { "linux" }
-        libdirs(path.join(kRootDir, ".build", "bin", "linux"))
-    configuration { "windows" }
-        libdirs(path.join(kRootDir, ".build", "bin", "windows"))
+        configuration { "linux" }
+            libdirs(path.join(kRootDir, ".build", "bin", "linux"))
+        configuration { "windows" }
+            libdirs(path.join(kRootDir, ".build", "bin", "windows"))
 
         files {
-            path.join(kRootDir, "test", "**"),
+            path.join(kRootDir, "sample", "src", "**"),
         }
 
         links {
