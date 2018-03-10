@@ -52,7 +52,7 @@ int main () {
     std::vector<std::string> dictionary;
     {
         std::ifstream ifs;
-        ifs.open ("english_words.txt", std::ifstream::in);
+        ifs.open ("dictionary.txt", std::ifstream::in);
     
         std::string str;
         while (ifs >> str) {
