@@ -12,7 +12,7 @@ class StringView {
 public:
     StringView () noexcept = default;
     StringView (const StringView &) noexcept = default;
-    inline StringView (const char * str) noexcept;
+    StringView (const char * str) noexcept;
     inline StringView (const char * str, const int32_t length) noexcept :
         m_ptr(str),
         m_length(length)

@@ -36,22 +36,24 @@ void Trie::Search (const StringView & prefix, std::set<std::string> * output) {
             node = it->second;
         }
         else {
-            std::stack<Node *> stack;
-            stack.push(node);
+            break;
+        }
+    }
 
+    if (i == prefix.Length()){
+        std::stack<Node *> stack;
+        stack.push(node);
 
-            while (!stack.empty()) {
-                node = stack.top();
-                stack.pop();
+        while (!stack.empty()) {
+            node = stack.top();
+            stack.pop();
 
-                for (const auto & kv : node->children) {
-                    stack.push(kv.second);
-                }
-
-                output->emplace(node->value);
+            for (const auto & kv : node->children) {
+                stack.push(kv.second);
             }
 
-            break;
+            if (node->value.length())
+                output->emplace(node->value);
         }
     }
 }

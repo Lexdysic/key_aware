@@ -6,12 +6,19 @@
 
 namespace key_aware {
 
+//
+// StringView
+//
 StringView::StringView (const char * str) noexcept :
     m_ptr(str),
     m_length((int32_t)strlen(str))
 {
 }
 
+
+//
+// KeyGraph
+//
 KeyGraph::KeyGraph (std::initializer_list<KeyMapping::value_type> && list) :
     m_keyMapping(std::move(list))
 {

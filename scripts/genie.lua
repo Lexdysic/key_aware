@@ -82,3 +82,25 @@ solution "key_aware"
         links {
             "key_aware",
         }
+
+    project "key_aware_test"
+        targetname "key_aware_test"
+        debugdir(path.join(kRootDir, "test", "data"))
+        kind "ConsoleApp"
+
+        includedirs {
+            path.join(kRootDir, "include"),
+        }
+        
+        configuration { "linux" }
+            libdirs(path.join(kRootDir, ".build", "bin", "linux"))
+        configuration { "windows" }
+            libdirs(path.join(kRootDir, ".build", "bin", "windows"))
+
+        files {
+            path.join(kRootDir, "test", "src", "**"),
+        }
+
+        links {
+            "key_aware",
+        }
