@@ -90,6 +90,7 @@ solution "key_aware"
 
         includedirs {
             path.join(kRootDir, "include"),
+            path.join(kRootDir, "third_party"),
         }
         
         configuration { "linux" }
