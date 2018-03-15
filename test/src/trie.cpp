@@ -7,7 +7,7 @@
 TEST_CASE("Small Test", "[trie]") {
     key_aware::Trie trie;
 
-    SECTION("Load Trie") {
+    {
         trie.Add("A");
         trie.Add("to");
         trie.Add("tea");
@@ -39,7 +39,7 @@ TEST_CASE("Small Test", "[trie]") {
 TEST_CASE("Big Test", "[trie]") {
     key_aware::Trie trie;
 
-    SECTION("Load Trie") {
+    {
         std::ifstream ifs;
         ifs.open ("dictionary.txt", std::ifstream::in);
     
