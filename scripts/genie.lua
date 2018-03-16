@@ -35,10 +35,9 @@ solution "key_aware"
         }
     configuration {}
 
-	targetdir (path.join(kRootDir, ".build", ACTION, "bin"))
-	objdir (path.join(kRootDir, ".build", _ACTION, "obj"))
+    targetdir (path.join(kRootDir, ".build", ACTION, "bin"))
+    objdir (path.join(kRootDir, ".build", _ACTION, "obj"))
 
-    
     -- WindowsSDK
     configuration { "vs2017"}
         windowstargetplatformversion(string.gsub(os.getenv("WindowsSDKVersion") or "10.0.16299.0", "\\", ""))
@@ -59,6 +58,7 @@ solution "key_aware"
             path.join(kRootDir, "scripts", "**"),
         }
 
+
     startproject "key_aware_sample"
 
     project "key_aware_sample"
@@ -74,6 +74,7 @@ solution "key_aware"
             libdirs(path.join(kRootDir, ".build", "bin", "linux"))
         configuration { "windows" }
             libdirs(path.join(kRootDir, ".build", "bin", "windows"))
+        configuration {}
 
         files {
             path.join(kRootDir, "sample", "src", "**"),
@@ -82,6 +83,7 @@ solution "key_aware"
         links {
             "key_aware",
         }
+
 
     project "key_aware_test"
         targetname "key_aware_test"
@@ -97,6 +99,7 @@ solution "key_aware"
             libdirs(path.join(kRootDir, ".build", "bin", "linux"))
         configuration { "windows" }
             libdirs(path.join(kRootDir, ".build", "bin", "windows"))
+        configuration {}
 
         files {
             path.join(kRootDir, "test", "src", "**"),
