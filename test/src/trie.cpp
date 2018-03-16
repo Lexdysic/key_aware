@@ -36,13 +36,11 @@ TEST_CASE("Small Test", "[trie]") {
     }
 }
 
-TEST_CASE("Big Test", "[trie]") {
-    key_aware::Trie trie;
-
-    {
+struct BigTestFixture {
+    BigTestFixture () {
         std::ifstream ifs;
         ifs.open ("dictionary.txt", std::ifstream::in);
-    
+
         std::string str;
         while (ifs >> str) {
             trie.Add(key_aware::StringView(str.data(), str.length()));
@@ -50,6 +48,12 @@ TEST_CASE("Big Test", "[trie]") {
 
         ifs.close();
     }
+
+    key_aware::Trie trie;
+};
+
+TEST_CASE_METHOD(BigTestFixture, "Big Test", "[trie]") {
+    REQUIRE(!trie.IsEmpty());
 
     SECTION("Search for known values") {
         std::set<std::string> set;
