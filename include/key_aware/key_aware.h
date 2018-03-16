@@ -49,13 +49,17 @@ public:
 
     void Search (const StringView & prefix, std::set<std::string> * output);
 
+    inline int32_t GetCount () const { return m_count; }
+    inline bool IsEmpty () const { return !m_count; }
+
 private:
     struct Node {
         std::string            value;
         std::map<char, Node *> children;
     };
 
-    Node m_root;
+    Node    m_root;
+    int32_t m_count = 0;
 };
 
 
